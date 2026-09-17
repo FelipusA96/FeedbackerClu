@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerador de Feedback de Monitoria</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+    .app-container { max-width: 1200px; margin: 0 auto; }
+    .header-title { text-align: center; margin-bottom: 25px; color: #1a237e; font-weight: 700; }
+    .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .grid-layout { grid-template-columns: 1fr; } }
+    
+    .card { background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .card-title { font-size: 16px; font-weight: bold; color: #1a237e; margin-bottom: 15px; border-bottom: 2px solid #e8eaf6; padding-bottom: 8px; }
+    
+    textarea, input { width: 100%; padding: 10px; border: 1px solid #cccccc; border-radius: 6px; font-size: 14px; font-family: inherit; }
+    textarea:focus, input:focus { border-color: #1a237e; outline: none; }
+    .form-group { margin-bottom: 12px; }
+    label { font-size: 12px; font-weight: bold; color: #555555; display: block; margin-bottom: 4px; text-transform: uppercase; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .btn { background: #1a237e; color: #ffffff; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn:hover { background: #283593; }
+    .btn-secondary { background: #2e7d32; }
+    .btn-secondary:hover { background: #1b5e20; }
+    .btn-outline { background: transparent; color: #1a237e; border: 1px solid #1a237e; }
+    .btn-outline:hover { background: #e8eaf6; }
+    .btn-danger { background: #c62828; padding: 6px 10px; font-size: 11px; }
+    .btn-block { width: 100%; }
+
+    /* ESTILO DA FICHA DE FEEDBACK DA AMIL */
+    .preview-container { background: #ffffff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .sheet { border: 2px solid #000000; padding: 0; background: #ffffff; font-family: Arial, sans-serif; color: #000000; width: 100%; box-sizing: border-box; }
+    .sheet-header { text-align: center; padding: 10px 0 5px 0; font-weight: bold; font-size: 16px; text-transform: uppercase; }
+    .sheet-subheader { text-align: center; font-size: 11px; margin-bottom: 10px; font-weight: bold; }
+    .sheet-table { width: 100%; border-collapse: collapse; margin-bottom: -1px; }
+    .sheet-table td, .sheet-table th { border: 1px solid #000000; padding: 6px 8px; font-size: 12px; vertical-align: top; }
+    .sheet-table th { background-color: #f2f2f2; text-align: left; font-weight: bold; text-transform: uppercase; }
+    .bg-gray { background-color: #f8f9fa; }
+    .score-badge { font-weight: bold; color: #2e7d32; font-size: 14px; }
+    .footer-warning { border-top: 1px solid #000000; padding: 12px; text-align: center; font-weight: bold; font-size: 11px; text-transform: uppercase; margin-top: 15px; }
+
+    /* HISTÓRICO */
+    .history-list { max-height: 250px; overflow-y: auto; margin-top: 10px; }
+    .history-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #e0e0e0; font-size: 13px; }
+    .history-item:hover { background-color: #f5f5f5; }
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #323232; color: #fff; padding: 12px 24px; border-radius: 6px; font-size: 14px; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 999; }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <h2 class="header-title">📋 GERADOR DE FEEDBACK DE MONITORIA</h2>
+
+  <div class="grid-layout">
+    <!-- COLUNA ESQUERDA: FORMULÁRIO -->
+    <div>
+      <div class="card">
+        <div class="card-title">1. Cole o Relatório Bruto</div>
+        <textarea id="rawInput" rows="7" placeholder="Cole aqui o texto da monitoria contendo Data Realizada, Operador, AQM, Monitoria, Atendimento, MO, etc..."></textarea>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+          <button class="btn btn-block" onclick="processarTexto()">⚡ Processar e Gerar Feedback</button>
+          <button class="btn btn-outline btn-block" onclick="novaMonitoria()">🗑️ Nova Monitoria</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">2. Ajuste Fino dos Dados</div>
+        <div class="form-row">
+          <div class="form-group"><label>Data Realizada</label><input type="text" id="fieldDataRealizada" oninput="atualizarFicha()"></div>
+          <div class="form-group"><label>Operador(a)</label><input type="text" id="fieldOperador" oninput="atualizarFicha()"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Data/Hora Atendimento</label><input type="text" id="fieldDataHora" oninput="atualizarFicha()"></div>
+          <div class="form-group"><label>Protocolo</label><input type="text" id="fieldProtocolo" oninput="atualizarFicha()"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Nota Monitoria</label><input type="text" id="fieldNotaMonitoria" oninput="atualizarFicha()"></div>
+          <div class="form-group"><label>Nota AQM</label><input type="text" id="fieldNotaAqm" oninput="atualizarFicha()"></div>
+        </div>
+        <div class="form-group"><label>M.O.</label><input type="text" id="fieldMo" oninput="atualizarFicha()"></div>
+        <div class="form-group"><label>Atendimento / Resumo</label><textarea id="fieldAtendimento" rows="3" oninput="atualizarFicha()"></textarea></div>
+        <div class="form-group"><label>Observações / Pontos de Atenção</label><textarea id="fieldObservacao" rows="3" oninput="atualizarFicha()"></textarea></div>
+      </div>
+    </div>
+
+    <!-- COLUNA DIREITA: PREVIEW DA FICHA DA MONITORIA -->
+    <div>
+      <div class="preview-container">
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+          <button class="btn btn-secondary btn-block" onclick="copiarFichaFormatada()">📋 Copiar Formatado (Teams/Outlook)</button>
+        </div>
+
+        <div id="fichaRender" class="sheet">
+          <div class="sheet-header">FEEDBACK MONITORIA</div>
+          <div class="sheet-subheader">Data de Realização: <span id="outDataRealizada">---</span></div>
+
+          <table class="sheet-table">
+            <tr>
+              <td colspan="2"><strong>Operador(a):</strong> <span id="outOperador">---</span></td>
+            </tr>
+            <tr class="bg-gray">
+              <td width="50%"><strong>NOTA MONITORIA:</strong> <span id="outNotaMonitoria" class="score-badge">--</span></td>
+              <td width="50%"><strong>NOTA AQM:</strong> <span id="outNotaAqm" class="score-badge">--</span></td>
+            </tr>
+          </table>
+
+          <table class="sheet-table">
+            <tr>
+              <td width="50%"><strong>PROTOCOLO:</strong> <br><span id="outProtocolo">---</span></td>
+              <td width="50%"><strong>M.O.:</strong> <br><span id="outMo">---</span></td>
+            </tr>
+            <tr>
+              <td colspan="2"><strong>DATA DO ATENDIMENTO:</strong> <span id="outDataHora">---</span></td>
+            </tr>
+          </table>
+
+          <table class="sheet-table">
+            <tr>
+              <th>DESCRIÇÃO DO ATENDIMENTO</th>
+            </tr>
+            <tr>
+              <td>
+                <div id="outAtendimento">---</div>
+              </td>
+            </tr>
+          </table>
+
+          <table class="sheet-table">
+            <tr>
+              <th>OBSERVAÇÕES / PONTOS DE ATENÇÃO</th>
+            </tr>
+            <tr>
+              <td>
+                <div id="outObservacao">---</div>
+              </td>
+            </tr>
+          </table>
+
+          <div class="footer-warning">
+            QUALQUER DÚVIDA OU CONTESTAÇÃO, ACIONAR SUA SUPERVISÃO! OBRIGADO
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTÓRICO DE MONITORIAS -->
+      <div class="card" style="margin-top: 20px;">
+        <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+          <span>📜 Histórico Salvo Automático</span>
+          <div style="display: flex; gap: 5px;">
+            <button class="btn btn-outline" style="padding: 4px 8px; font-size: 11px;" onclick="exportarHistorico()">📥 Baixar (.txt)</button>
+            <button class="btn btn-danger" onclick="limparHistorico()">Limpar Tudo</button>
+          </div>
+        </div>
+        <div id="historyContainer" class="history-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast">Texto copiado com sucesso!</div>
+
+<script>
+  const CAMPOS_IDS = ['fieldDataRealizada','fieldOperador','fieldDataHora','fieldProtocolo',
+                      'fieldNotaMonitoria','fieldNotaAqm','fieldMo','fieldAtendimento','fieldObservacao'];
+
+  // Aceita nota inteira ou decimal (com ponto ou vírgula), ex: 8, 8.5, 8,5
+  const NUM_PATTERN = '([\\d]+(?:[.,]\\d+)?)';
+
+  function limparCampos() {
+    CAMPOS_IDS.forEach(id => { document.getElementById(id).value = ''; });
+    atualizarFicha();
+  }
+
+  function novaMonitoria() {
+    document.getElementById('rawInput').value = '';
+    limparCampos();
+    document.getElementById('rawInput').focus();
+  }
+
+  // Faz só a extração/preenchimento dos campos, sem tocar no histórico.
+  // Usada tanto ao processar um texto novo quanto ao reabrir um item do histórico.
+  function preencherFormulario(raw) {
+    limparCampos(); // evita que dados da monitoria anterior "vazem" para esta
+
+    const dataRealizadaMatch = raw.match(/Data Realizada:\s*(.*)/i);
+    const operadorMatch = raw.match(/Operador\(a\):\s*(.*)/i);
+    const dataHoraMatch = raw.match(/Data\/Hora:\s*(.*)/i);
+    const protocoloMatch = raw.match(/Protocolo:\s*(.*)/i);
+    const aqmMatch = raw.match(new RegExp('AQM:\\s*' + NUM_PATTERN, 'i'));
+    const monitoriaMatch = raw.match(new RegExp('Monitoria:\\s*' + NUM_PATTERN, 'i')) ||
+                            raw.match(new RegExp('Nota:\\s*' + NUM_PATTERN, 'i'));
+    const moMatch = raw.match(/MO:\s*(.*)/i);
+
+    const atendimentoMatch = raw.match(/Atendimento[\s\S]*?MO:\s*[^\n]*\n([\s\S]*?)(?=Observação:|$)/i) ||
+                             raw.match(/Atendimento\s*\n([\s\S]*?)(?=Observação:|$)/i);
+    const obsMatch = raw.match(/Observação:\s*([\s\S]*)/i);
+
+    if (dataRealizadaMatch) document.getElementById('fieldDataRealizada').value = dataRealizadaMatch[1].trim();
+    if (operadorMatch) document.getElementById('fieldOperador').value = operadorMatch[1].trim();
+    if (dataHoraMatch) document.getElementById('fieldDataHora').value = dataHoraMatch[1].trim();
+    if (protocoloMatch) document.getElementById('fieldProtocolo').value = protocoloMatch[1].trim();
+    if (aqmMatch) document.getElementById('fieldNotaAqm').value = aqmMatch[1].trim();
+    if (monitoriaMatch) document.getElementById('fieldNotaMonitoria').value = monitoriaMatch[1].trim();
+    if (moMatch) document.getElementById('fieldMo').value = moMatch[1].trim();
+
+    if (atendimentoMatch) {
+      document.getElementById('fieldAtendimento').value = atendimentoMatch[1].trim();
+    } else {
+      // Fallback: tenta localizar o trecho de saudação ao cliente (Sr./Sr.ª/Sra.)
+      const saudacaoIdx = raw.search(/\bSr\.?ª?\b|\bSra\.?\b/i);
+      if (saudacaoIdx !== -1) {
+        const fallback = raw.substring(saudacaoIdx);
+        const obsIdx = fallback.search(/Observação:/i);
+        document.getElementById('fieldAtendimento').value = obsIdx !== -1 ? fallback.substring(0, obsIdx).trim() : fallback.trim();
+      }
+    }
+
+    if (obsMatch) document.getElementById('fieldObservacao').value = obsMatch[1].trim();
+
+    atualizarFicha();
+  }
+
+  function processarTexto() {
+    const raw = document.getElementById('rawInput').value;
+    if (!raw.trim()) {
+      showToast('Por favor, cole algum texto primeiro.');
+      return;
+    }
+    preencherFormulario(raw);
+    salvarNoHistorico(raw);
+  }
+
+  function atualizarFicha() {
+    document.getElementById('outDataRealizada').innerText = document.getElementById('fieldDataRealizada').value || '---';
+    document.getElementById('outOperador').innerText = document.getElementById('fieldOperador').value || '---';
+    document.getElementById('outDataHora').innerText = document.getElementById('fieldDataHora').value || '---';
+    document.getElementById('outProtocolo').innerText = document.getElementById('fieldProtocolo').value || '---';
+    document.getElementById('outNotaMonitoria').innerText = document.getElementById('fieldNotaMonitoria').value || '--';
+    document.getElementById('outNotaAqm').innerText = document.getElementById('fieldNotaAqm').value || '--';
+    document.getElementById('outMo').innerText = document.getElementById('fieldMo').value || '---';
+    document.getElementById('outAtendimento').innerText = document.getElementById('fieldAtendimento').value || '---';
+    document.getElementById('outObservacao').innerText = document.getElementById('fieldObservacao').value || '---';
+  }
+
+  // Gera a ficha como HTML com estilos INLINE em cada célula. Isso é essencial:
+  // o <style> da página não é copiado junto no clipboard, então tabelas/negrito/
+  // fundo cinza só sobrevivem ao colar no Teams/Outlook/Gmail se o estilo estiver
+  // inline em cada elemento.
+  function gerarHtmlFicha() {
+    const v = id => (document.getElementById(id).value || '').trim();
+    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+
+    const td = 'border:1px solid #000000;padding:6px 8px;font-size:12px;vertical-align:top;font-family:Arial,sans-serif;';
+    const th = td + 'background-color:#f2f2f2;text-align:left;font-weight:bold;text-transform:uppercase;';
+    const table = 'width:100%;border-collapse:collapse;margin-bottom:-1px;';
+    const badge = 'font-weight:bold;color:#2e7d32;font-size:14px;';
+
+    return `<div style="border:2px solid #000000;font-family:Arial,sans-serif;color:#000000;width:100%;box-sizing:border-box;">
+  <div style="text-align:center;padding:10px 0 5px 0;font-weight:bold;font-size:16px;text-transform:uppercase;">FEEDBACK MONITORIA</div>
+  <div style="text-align:center;font-size:11px;margin-bottom:10px;font-weight:bold;">Data de Realização: ${esc(v('fieldDataRealizada') || '---')}</div>
+  <table style="${table}">
+    <tr><td style="${td}" colspan="2"><strong>Operador(a):</strong> ${esc(v('fieldOperador') || '---')}</td></tr>
+    <tr style="background-color:#f8f9fa;">
+      <td style="${td}" width="50%"><strong>NOTA MONITORIA:</strong> <span style="${badge}">${esc(v('fieldNotaMonitoria') || '--')}</span></td>
+      <td style="${td}" width="50%"><strong>NOTA AQM:</strong> <span style="${badge}">${esc(v('fieldNotaAqm') || '--')}</span></td>
+    </tr>
+  </table>
+  <table style="${table}">
+    <tr>
+      <td style="${td}" width="50%"><strong>PROTOCOLO:</strong><br>${esc(v('fieldProtocolo') || '---')}</td>
+      <td style="${td}" width="50%"><strong>M.O.:</strong><br>${esc(v('fieldMo') || '---')}</td>
+    </tr>
+    <tr><td style="${td}" colspan="2"><strong>DATA DO ATENDIMENTO:</strong> ${esc(v('fieldDataHora') || '---')}</td></tr>
+  </table>
+  <table style="${table}">
+    <tr><th style="${th}">DESCRIÇÃO DO ATENDIMENTO</th></tr>
+    <tr><td style="${td}">${esc(v('fieldAtendimento') || '---')}</td></tr>
+  </table>
+  <table style="${table}">
+    <tr><th style="${th}">OBSERVAÇÕES / PONTOS DE ATENÇÃO</th></tr>
+    <tr><td style="${td}">${esc(v('fieldObservacao') || '---')}</td></tr>
+  </table>
+  <div style="border-top:1px solid #000000;padding:12px;text-align:center;font-weight:bold;font-size:11px;text-transform:uppercase;margin-top:15px;">
+    QUALQUER DÚVIDA OU CONTESTAÇÃO, ACIONAR SUA SUPERVISÃO! OBRIGADO
+  </div>
+</div>`;
+  }
+
+  async function copiarFichaFormatada() {
+    const htmlContent = gerarHtmlFicha();
+    const textContent = document.getElementById('fichaRender').innerText;
+
+    try {
+      if (!navigator.clipboard || !window.ClipboardItem) {
+        throw new Error('Clipboard API com HTML não suportada neste navegador/contexto.');
+      }
+      const blobHtml = new Blob([htmlContent], { type: 'text/html' });
+      const blobText = new Blob([textContent], { type: 'text/plain' });
+      await navigator.clipboard.write([new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })]);
+      showToast('Ficha formatada copiada com sucesso!');
+    } catch (err) {
+      console.error('Erro ao copiar formatado, tentando texto simples: ', err);
+      try {
+        await navigator.clipboard.writeText(textContent);
+        showToast('Formatação não suportada aqui — copiado como texto simples.');
+      } catch (err2) {
+        console.error('Erro ao copiar: ', err2);
+        showToast('Não foi possível copiar. Selecione a ficha manualmente (Ctrl+C).');
+      }
+    }
+  }
+
+  // Leitura/escrita protegidas: um histórico corrompido ou armazenamento
+  // indisponível (modo privado, quota cheia) não pode travar a página inteira.
+  function lerHistorico() {
+    try {
+      return JSON.parse(localStorage.getItem('monitorias_history') || '[]');
+    } catch (e) {
+      console.error('Histórico corrompido, reiniciando lista.', e);
+      return [];
+    }
+  }
+
+  function gravarHistorico(history) {
+    try {
+      localStorage.setItem('monitorias_history', JSON.stringify(history));
+    } catch (e) {
+      console.error('Não foi possível salvar o histórico.', e);
+      showToast('Aviso: não foi possível salvar no histórico (armazenamento indisponível).');
+    }
+  }
+
+  function salvarNoHistorico(rawText) {
+    const op = document.getElementById('fieldOperador').value || 'Operador não identificado';
+    const dt = document.getElementById('fieldDataRealizada').value || new Date().toLocaleDateString();
+    
+    let history = lerHistorico();
+    history.unshift({ id: Date.now(), operador: op, data: dt, text: rawText });
+    
+    if (history.length > 50) history.pop();
+    gravarHistorico(history);
+    carregarHistorico();
+  }
+
+  function carregarHistorico() {
+    const history = lerHistorico();
+    const container = document.getElementById('historyContainer');
+    
+    if (history.length === 0) {
+      container.innerHTML = '<div style="padding:10px; color:#888; text-align:center;">Nenhuma monitoria salva no histórico.</div>';
+      return;
+    }
+
+    container.innerHTML = history.map(item => `
+      <div class="history-item">
+        <div>
+          <strong>${escapeHtml(item.operador)}</strong> 
+          <span style="color:#666; font-size:11px;">(${escapeHtml(item.data)})</span>
+        </div>
+        <div>
+          <button class="btn btn-outline" style="padding:3px 6px; font-size:11px;" onclick="recarregarHistorico(${item.id})">Reabrir</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function recarregarHistorico(id) {
+    const history = lerHistorico();
+    const item = history.find(h => h.id === id);
+    if (item) {
+      document.getElementById('rawInput').value = item.text;
+      preencherFormulario(item.text); // só preenche; não grava de novo no histórico
+      showToast('Monitoria carregada do histórico.');
+    }
+  }
+
+  function exportarHistorico() {
+    const history = lerHistorico();
+    if (history.length === 0) {
+      showToast('Nenhum histórico para exportar.');
+      return;
+    }
+    
+    let content = "=== HISTÓRICO DE MONITORIAS ===\n\n";
+    history.forEach((h, index) => {
+      content += `--- MONITORIA #${index + 1} (${h.operador} - ${h.data}) ---\n`;
+      content += h.text + "\n\n";
+    });
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `historico_monitorias_${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+  }
+
+  function limparHistorico() {
+    if (confirm('Deseja realmente apagar todo o histórico de monitorias salvas?')) {
+      localStorage.removeItem('monitorias_history');
+      carregarHistorico();
+      showToast('Histórico apagado!');
+    }
+  }
+
+  function escapeHtml(text) {
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.innerText = msg;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 3000);
+  }
+
+  window.onload = function() {
+    carregarHistorico();
+  };
+</script>
+
+</body>
+</html>
