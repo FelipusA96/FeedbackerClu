@@ -28,7 +28,13 @@
     .btn-outline { background: transparent; color: #1a237e; border: 1px solid #1a237e; }
     .btn-outline:hover { background: #e8eaf6; }
     .btn-danger { background: #c62828; padding: 6px 10px; font-size: 11px; }
+    .btn-alert { background: #c62828; }
+    .btn-alert:hover { background: #8e1c1c; }
     .btn-block { width: 100%; }
+
+    .card-alert { border-left: 4px solid #c62828; }
+    .warning-banner { display: none; background: #fdecea; color: #c62828; border: 1px solid #f5c2c0; border-radius: 6px; padding: 10px 12px; font-size: 12px; font-weight: bold; margin-bottom: 12px; }
+    .email-preview { font-family: 'Consolas', 'Courier New', monospace; white-space: pre-wrap; min-height: 260px; resize: vertical; }
 
     /* ESTILO DA FICHA DE FEEDBACK DA AMIL */
     .preview-container { background: #ffffff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
@@ -83,6 +89,35 @@
         <div class="form-group"><label>M.O.</label><input type="text" id="fieldMo" oninput="atualizarFicha()"></div>
         <div class="form-group"><label>Atendimento / Resumo</label><textarea id="fieldAtendimento" rows="3" oninput="atualizarFicha()"></textarea></div>
         <div class="form-group"><label>Observações / Pontos de Atenção</label><textarea id="fieldObservacao" rows="3" oninput="atualizarFicha()"></textarea></div>
+      </div>
+
+      <div class="card card-alert">
+        <div class="card-title">3. Solicitação de Reorientação</div>
+        <div id="avisoNotaZero" class="warning-banner">⚠️ Nota da monitoria zerada — considere abrir uma Reorientação para o supervisor.</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Supervisor(a) Imediato(a)</label>
+            <select id="fieldSupervisor" onchange="alternarSupervisorOutro(); atualizarPreviewReorientacao();">
+              <option value="">Selecione...</option>
+              <option value="Kelvin">Kelvin</option>
+              <option value="Eliane">Eliane</option>
+              <option value="José">José</option>
+              <option value="Leidiane">Leidiane</option>
+              <option value="Diogo">Diogo</option>
+              <option value="Pamela">Pamela</option>
+              <option value="Outro">Outro...</option>
+            </select>
+          </div>
+          <div class="form-group"><label>E-mail do(a) Supervisor(a) (opcional)</label><input type="email" id="fieldSupervisorEmail" oninput="atualizarPreviewReorientacao()" placeholder="supervisor@empresa.com"></div>
+        </div>
+        <div class="form-group" id="grupoSupervisorOutro" style="display: none;">
+          <label>Nome do(a) Supervisor(a)</label>
+          <input type="text" id="fieldSupervisorOutro" oninput="atualizarPreviewReorientacao()" placeholder="Digite o nome do(a) supervisor(a)">
+        </div>
+        <div class="form-group"><label>Atendimento (Data/Hora do atendimento)</label><input type="text" id="fieldReorientAtendimento" oninput="atualizarPreviewReorientacao()" placeholder="Ex: 14/09/2026 12:35:37"></div>
+        <div class="form-group"><label>Solicitação</label><input type="text" id="fieldSolicitacao" oninput="atualizarPreviewReorientacao()" placeholder="Ex: análise e providências cabíveis"></div>
+        <div class="form-group"><label>Desvios identificados (um por linha)</label><textarea id="fieldDesvios" rows="4" oninput="atualizarPreviewReorientacao()" placeholder="Não realizou a sondagem...&#10;Não direcionou ao setor pertinente..."></textarea></div>
+        <button class="btn btn-alert btn-block" onclick="gerarEmailReorientacao()">📧 Gerar E-mail de Reorientação</button>
       </div>
     </div>
 
@@ -145,6 +180,16 @@
         </div>
       </div>
 
+      <!-- PREVIEW DO E-MAIL DE REORIENTAÇÃO -->
+      <div class="card" style="margin-top: 20px;">
+        <div class="card-title">✉️ Pré-visualização do E-mail de Reorientação</div>
+        <textarea id="reorientEmailPreview" class="email-preview" rows="14" placeholder="Preencha os dados da Reorientação e clique em &quot;Gerar E-mail&quot; — o texto aparecerá aqui, editável antes de copiar ou enviar."></textarea>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+          <button class="btn btn-secondary btn-block" onclick="copiarEmailReorientacao()">📋 Copiar Texto</button>
+          <button class="btn btn-outline btn-block" onclick="abrirNoOutlook()">📧 Abrir no Outlook</button>
+        </div>
+      </div>
+
       <!-- HISTÓRICO DE MONITORIAS -->
       <div class="card" style="margin-top: 20px;">
         <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
@@ -164,13 +209,17 @@
 
 <script>
   const CAMPOS_IDS = ['fieldDataRealizada','fieldOperador','fieldDataHora','fieldProtocolo',
-                      'fieldNotaMonitoria','fieldNotaAqm','fieldMo','fieldAtendimento','fieldObservacao'];
+                      'fieldNotaMonitoria','fieldNotaAqm','fieldMo','fieldAtendimento','fieldObservacao',
+                      'fieldSupervisor','fieldSupervisorOutro','fieldSupervisorEmail','fieldReorientAtendimento','fieldSolicitacao','fieldDesvios'];
 
   // Aceita nota inteira ou decimal (com ponto ou vírgula), ex: 8, 8.5, 8,5
   const NUM_PATTERN = '([\\d]+(?:[.,]\\d+)?)';
 
   function limparCampos() {
     CAMPOS_IDS.forEach(id => { document.getElementById(id).value = ''; });
+    const preview = document.getElementById('reorientEmailPreview');
+    if (preview) preview.value = '';
+    alternarSupervisorOutro();
     atualizarFicha();
   }
 
@@ -200,7 +249,10 @@
 
     if (dataRealizadaMatch) document.getElementById('fieldDataRealizada').value = dataRealizadaMatch[1].trim();
     if (operadorMatch) document.getElementById('fieldOperador').value = operadorMatch[1].trim();
-    if (dataHoraMatch) document.getElementById('fieldDataHora').value = dataHoraMatch[1].trim();
+    if (dataHoraMatch) {
+      document.getElementById('fieldDataHora').value = dataHoraMatch[1].trim();
+      document.getElementById('fieldReorientAtendimento').value = dataHoraMatch[1].trim();
+    }
     if (protocoloMatch) document.getElementById('fieldProtocolo').value = protocoloMatch[1].trim();
     if (aqmMatch) document.getElementById('fieldNotaAqm').value = aqmMatch[1].trim();
     if (monitoriaMatch) document.getElementById('fieldNotaMonitoria').value = monitoriaMatch[1].trim();
@@ -243,6 +295,15 @@
     document.getElementById('outMo').innerText = document.getElementById('fieldMo').value || '---';
     document.getElementById('outAtendimento').innerText = document.getElementById('fieldAtendimento').value || '---';
     document.getElementById('outObservacao').innerText = document.getElementById('fieldObservacao').value || '---';
+
+    // Destaca a nota e mostra o aviso de Reorientação quando a monitoria zera
+    const notaTexto = document.getElementById('fieldNotaMonitoria').value.replace(',', '.').trim();
+    const notaValor = parseFloat(notaTexto);
+    const notaSpan = document.getElementById('outNotaMonitoria');
+    const aviso = document.getElementById('avisoNotaZero');
+    const zerou = notaTexto !== '' && !isNaN(notaValor) && notaValor === 0;
+    notaSpan.style.color = zerou ? '#c62828' : '#2e7d32';
+    if (aviso) aviso.style.display = zerou ? 'block' : 'none';
   }
 
   // Gera a ficha como HTML com estilos INLINE em cada célula. Isso é essencial:
@@ -313,6 +374,140 @@
     }
   }
 
+  // ===================== REORIENTAÇÃO =====================
+
+  function saudacaoPorHorario() {
+    const h = new Date().getHours();
+    if (h < 12) return 'Bom dia';
+    if (h < 18) return 'Boa tarde';
+    return 'Boa noite';
+  }
+
+  function agoraFormatado() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  // Transforma cada linha não vazia em um tópico "- ..." (sem duplicar o traço
+  // se a pessoa já tiver digitado um).
+  function formatarDesvios(texto) {
+    return texto.split('\n')
+      .map(l => l.trim())
+      .filter(Boolean)
+      .map(l => l.replace(/^[-•]\s*/, ''))
+      .map(l => `- ${l}`)
+      .join('\n');
+  }
+
+  function alternarSupervisorOutro() {
+    const sel = document.getElementById('fieldSupervisor').value;
+    const grupo = document.getElementById('grupoSupervisorOutro');
+    grupo.style.display = sel === 'Outro' ? 'block' : 'none';
+  }
+
+  function getSupervisorNome() {
+    const sel = document.getElementById('fieldSupervisor').value;
+    if (sel === 'Outro') return (document.getElementById('fieldSupervisorOutro').value || '').trim();
+    return sel;
+  }
+
+  function montarTextoReorientacao() {
+    const v = id => (document.getElementById(id).value || '').trim();
+    const operador = v('fieldOperador') || '[nome do operador]';
+    const supervisor = getSupervisorNome() || '[nome do supervisor]';
+    const protocolo = v('fieldProtocolo') || '---';
+    const atendimento = v('fieldReorientAtendimento') || v('fieldDataHora') || '---';
+    const solicitacao = v('fieldSolicitacao') || '---';
+    const desviosRaw = v('fieldDesvios');
+    const desvios = desviosRaw ? formatarDesvios(desviosRaw) : '- ---';
+
+    return `${saudacaoPorHorario()}, ${supervisor}
+Solicito por gentileza REORIENTAÇÃO ao operador(a) ${operador}, devido os desvios identificados.
+
+Data/Hora: ${agoraFormatado()}
+Protocolo: ${protocolo}
+
+Operador(a): ${operador}
+Atendimento: ${atendimento}
+SOLICITAÇÃO: ${solicitacao}
+DESVIO:
+${desvios}
+
+Qualquer dúvida estou a disposição!`;
+  }
+
+  // Atualiza só a pré-visualização (não grava no histórico) — chamada a cada
+  // edição nos campos da Reorientação, para não sobrescrever ajustes manuais
+  // no texto final feitos após o clique em "Gerar E-mail".
+  function atualizarPreviewReorientacao() {
+    document.getElementById('reorientEmailPreview').value = montarTextoReorientacao();
+  }
+
+  function gerarEmailReorientacao() {
+    const texto = montarTextoReorientacao();
+    document.getElementById('reorientEmailPreview').value = texto;
+    salvarReorientacaoNoHistorico(texto);
+    showToast('E-mail de reorientação gerado e registrado no histórico.');
+  }
+
+  function salvarReorientacaoNoHistorico(texto) {
+    const v = id => (document.getElementById(id).value || '').trim();
+    const history = lerHistorico();
+    history.unshift({
+      id: Date.now(),
+      tipo: 'reorientacao',
+      operador: v('fieldOperador') || 'Operador não identificado',
+      data: v('fieldReorientAtendimento') || v('fieldDataHora') || new Date().toLocaleDateString(),
+      text: texto,
+      dados: {
+        supervisorSelect: document.getElementById('fieldSupervisor').value,
+        supervisorOutro: v('fieldSupervisorOutro'),
+        supervisorEmail: v('fieldSupervisorEmail'),
+        atendimento: v('fieldReorientAtendimento'),
+        protocolo: v('fieldProtocolo'),
+        operador: v('fieldOperador'),
+        solicitacao: v('fieldSolicitacao'),
+        desvios: v('fieldDesvios')
+      }
+    });
+    if (history.length > 50) history.pop();
+    gravarHistorico(history);
+    carregarHistorico();
+  }
+
+  async function copiarEmailReorientacao() {
+    const texto = document.getElementById('reorientEmailPreview').value;
+    if (!texto.trim()) {
+      showToast('Gere o e-mail antes de copiar.');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(texto);
+      showToast('Texto do e-mail copiado!');
+    } catch (err) {
+      console.error('Erro ao copiar e-mail: ', err);
+      showToast('Não foi possível copiar. Selecione o texto manualmente (Ctrl+C).');
+    }
+  }
+
+  function abrirNoOutlook() {
+    const texto = document.getElementById('reorientEmailPreview').value;
+    if (!texto.trim()) {
+      showToast('Gere o e-mail antes de abrir no Outlook.');
+      return;
+    }
+    const destinatario = document.getElementById('fieldSupervisorEmail').value.trim();
+    const operador = document.getElementById('fieldOperador').value.trim();
+    const protocolo = document.getElementById('fieldProtocolo').value.trim();
+    const assunto = `REORIENTAÇÃO - ${operador || 'Operador'}${protocolo ? ' - Protocolo ' + protocolo : ''}`;
+    if (texto.length > 1800) {
+      showToast('Aviso: e-mail longo, alguns clientes de e-mail podem cortar o corpo do mailto.');
+    }
+    const link = `mailto:${destinatario}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(texto)}`;
+    window.location.href = link;
+  }
+
   // Leitura/escrita protegidas: um histórico corrompido ou armazenamento
   // indisponível (modo privado, quota cheia) não pode travar a página inteira.
   function lerHistorico() {
@@ -338,7 +533,7 @@
     const dt = document.getElementById('fieldDataRealizada').value || new Date().toLocaleDateString();
     
     let history = lerHistorico();
-    history.unshift({ id: Date.now(), operador: op, data: dt, text: rawText });
+    history.unshift({ id: Date.now(), tipo: 'monitoria', operador: op, data: dt, text: rawText });
     
     if (history.length > 50) history.pop();
     gravarHistorico(history);
@@ -357,7 +552,7 @@
     container.innerHTML = history.map(item => `
       <div class="history-item">
         <div>
-          <strong>${escapeHtml(item.operador)}</strong> 
+          <strong>${item.tipo === 'reorientacao' ? '🔺 ' : '📋 '}${escapeHtml(item.operador)}</strong> 
           <span style="color:#666; font-size:11px;">(${escapeHtml(item.data)})</span>
         </div>
         <div>
@@ -370,7 +565,24 @@
   function recarregarHistorico(id) {
     const history = lerHistorico();
     const item = history.find(h => h.id === id);
-    if (item) {
+    if (!item) return;
+
+    if (item.tipo === 'reorientacao') {
+      const d = item.dados || {};
+      limparCampos();
+      document.getElementById('fieldOperador').value = d.operador || '';
+      document.getElementById('fieldProtocolo').value = d.protocolo || '';
+      document.getElementById('fieldSupervisor').value = d.supervisorSelect || '';
+      document.getElementById('fieldSupervisorOutro').value = d.supervisorOutro || '';
+      alternarSupervisorOutro();
+      document.getElementById('fieldSupervisorEmail').value = d.supervisorEmail || '';
+      document.getElementById('fieldReorientAtendimento').value = d.atendimento || '';
+      document.getElementById('fieldSolicitacao').value = d.solicitacao || '';
+      document.getElementById('fieldDesvios').value = d.desvios || '';
+      atualizarFicha();
+      document.getElementById('reorientEmailPreview').value = item.text;
+      showToast('Reorientação carregada do histórico.');
+    } else {
       document.getElementById('rawInput').value = item.text;
       preencherFormulario(item.text); // só preenche; não grava de novo no histórico
       showToast('Monitoria carregada do histórico.');
