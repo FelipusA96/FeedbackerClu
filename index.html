@@ -1,102 +1,291 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gerador de Feedback de Monitoria</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #333; }
-    .app-container { max-width: 1200px; margin: 0 auto; }
-    .header-title { text-align: center; margin-bottom: 25px; color: #1a237e; font-weight: 700; }
-    .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media (max-width: 900px) { .grid-layout { grid-template-columns: 1fr; } }
-    
-    .card { background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
-    .card-title { font-size: 16px; font-weight: bold; color: #1a237e; margin-bottom: 15px; border-bottom: 2px solid #e8eaf6; padding-bottom: 8px; }
-    
-    textarea, input { width: 100%; padding: 10px; border: 1px solid #cccccc; border-radius: 6px; font-size: 14px; font-family: inherit; }
-    textarea:focus, input:focus { border-color: #1a237e; outline: none; }
-    .form-group { margin-bottom: 12px; }
-    label { font-size: 12px; font-weight: bold; color: #555555; display: block; margin-bottom: 4px; text-transform: uppercase; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Monitoria &amp; Reorientação</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-    .btn { background: #1a237e; color: #ffffff; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-    .btn:hover { background: #283593; }
-    .btn-secondary { background: #2e7d32; }
-    .btn-secondary:hover { background: #1b5e20; }
-    .btn-outline { background: transparent; color: #1a237e; border: 1px solid #1a237e; }
-    .btn-outline:hover { background: #e8eaf6; }
-    .btn-danger { background: #c62828; padding: 6px 10px; font-size: 11px; }
-    .btn-alert { background: #c62828; }
-    .btn-alert:hover { background: #8e1c1c; }
-    .btn-block { width: 100%; }
+  :root {
+    --bg: #eef1f7;
+    --surface: #ffffff;
+    --border: #e2e6f0;
+    --navy-900: #10182b;
+    --navy-700: #1e2a4a;
+    --navy-500: #3a4a78;
+    --navy-050: #eef0fa;
+    --text-primary: #1a1f2b;
+    --text-secondary: #626b7e;
+    --text-muted: #8b93a7;
+    --green-700: #2f6f4e;
+    --green-800: #24583f;
+    --green-050: #eaf4ee;
+    --red-700: #9c2b2b;
+    --red-800: #7e2222;
+    --red-050: #fbeaea;
+    --radius: 10px;
+    --shadow-sheet: 0 8px 24px rgba(16, 24, 43, 0.10);
+  }
 
-    .card-alert { border-left: 4px solid #c62828; }
-    .warning-banner { display: none; background: #fdecea; color: #c62828; border: 1px solid #f5c2c0; border-radius: 6px; padding: 10px 12px; font-size: 12px; font-weight: bold; margin-bottom: 12px; }
-    .email-preview { font-family: 'Consolas', 'Courier New', monospace; white-space: pre-wrap; min-height: 260px; resize: vertical; }
+  * { box-sizing: border-box; }
 
-    /* ESTILO DA FICHA DE FEEDBACK DA AMIL */
-    .preview-container { background: #ffffff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-    .sheet { border: 2px solid #000000; padding: 0; background: #ffffff; font-family: Arial, sans-serif; color: #000000; width: 100%; box-sizing: border-box; }
-    .sheet-header { text-align: center; padding: 10px 0 5px 0; font-weight: bold; font-size: 16px; text-transform: uppercase; }
-    .sheet-subheader { text-align: center; font-size: 11px; margin-bottom: 10px; font-weight: bold; }
-    .sheet-table { width: 100%; border-collapse: collapse; margin-bottom: -1px; }
-    .sheet-table td, .sheet-table th { border: 1px solid #000000; padding: 6px 8px; font-size: 12px; vertical-align: top; }
-    .sheet-table th { background-color: #f2f2f2; text-align: left; font-weight: bold; text-transform: uppercase; }
-    .bg-gray { background-color: #f8f9fa; }
-    .score-badge { font-weight: bold; color: #2e7d32; font-size: 14px; }
-    .footer-warning { border-top: 1px solid #000000; padding: 12px; text-align: center; font-weight: bold; font-size: 11px; text-transform: uppercase; margin-top: 15px; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background-color: var(--bg);
+    margin: 0;
+    padding: 28px 20px 60px;
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
 
-    /* HISTÓRICO */
-    .history-list { max-height: 250px; overflow-y: auto; margin-top: 10px; }
-    .history-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #e0e0e0; font-size: 13px; }
-    .history-item:hover { background-color: #f5f5f5; }
-    .toast { position: fixed; bottom: 20px; right: 20px; background: #323232; color: #fff; padding: 12px 24px; border-radius: 6px; font-size: 14px; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 999; }
-  </style>
+  :focus-visible { outline: 2px solid var(--navy-500); outline-offset: 2px; }
+
+  .app-container { max-width: 1180px; margin: 0 auto; }
+
+  /* ===== CABEÇALHO ===== */
+  .app-header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: linear-gradient(135deg, var(--navy-900), var(--navy-700));
+    color: #fff;
+    border-radius: var(--radius);
+    padding: 26px 30px;
+    margin-bottom: 20px;
+  }
+  .app-header-icon {
+    flex-shrink: 0;
+    width: 52px; height: 52px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+  }
+  .app-title { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .app-subtitle { margin: 0; font-size: 13.5px; color: rgba(255,255,255,0.72); line-height: 1.5; max-width: 620px; }
+
+  /* ===== ALTERNADOR DE ABAS ===== */
+  .tab-switch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    background: var(--navy-050);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px;
+    margin-bottom: 24px;
+  }
+  .tab-btn {
+    border: none;
+    background: transparent;
+    color: var(--navy-700);
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 12px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .tab-btn:hover { background: rgba(30, 42, 74, 0.08); }
+  .tab-btn.active {
+    background: var(--surface);
+    color: var(--navy-900);
+    box-shadow: 0 2px 8px rgba(16, 24, 43, 0.14);
+  }
+
+  .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 900px) { .grid-layout { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) {
+    .tab-switch { grid-template-columns: 1fr; }
+    .app-header { flex-direction: column; align-items: flex-start; }
+  }
+
+  /* ===== CARTÕES ===== */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+  }
+  .card-accent-red { border-top: 3px solid var(--red-700); }
+
+  .card-title {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 15px; font-weight: 700; color: var(--navy-900);
+    margin-bottom: 18px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .step-badge {
+    flex-shrink: 0;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--navy-700); color: #fff;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card-accent-red .step-badge { background: var(--red-700); }
+  .card-caption { font-size: 12.5px; color: var(--text-muted); margin: -12px 0 16px; }
+
+  /* ===== CAMPOS ===== */
+  textarea, input, select {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid #d3d9e6; border-radius: 8px;
+    font-size: 14px; font-family: inherit; color: var(--text-primary);
+    background: #fff;
+    transition: border-color 0.15s ease;
+  }
+  textarea:focus, input:focus, select:focus { border-color: var(--navy-500); outline: none; }
+  .form-group { margin-bottom: 16px; }
+  .form-group:last-child { margin-bottom: 0; }
+  label { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field-divider { border: none; border-top: 1px dashed var(--border); margin: 18px 0; }
+
+  /* ===== BOTÕES ===== */
+  .btn {
+    border: none; border-radius: 8px; font-family: inherit;
+    font-weight: 600; font-size: 13.5px; cursor: pointer;
+    padding: 11px 18px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  }
+  .btn-primary { background: var(--navy-700); color: #fff; }
+  .btn-primary:hover { background: var(--navy-900); }
+  .btn-secondary { background: var(--green-700); color: #fff; }
+  .btn-secondary:hover { background: var(--green-800); }
+  .btn-danger { background: var(--red-700); color: #fff; }
+  .btn-danger:hover { background: var(--red-800); }
+  .btn-outline { background: transparent; color: var(--navy-700); border: 1px solid #c7cee0; }
+  .btn-outline:hover { background: var(--navy-050); }
+  .btn-outline-red { background: transparent; color: var(--red-700); border: 1px solid #e3b9b9; }
+  .btn-outline-red:hover { background: var(--red-050); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-block { width: 100%; }
+  .btn-row { display: flex; gap: 10px; margin-top: 14px; }
+  .btn-row .btn { flex: 1; }
+
+  /* ===== AVISO DE NOTA ZERADA ===== */
+  .alert-banner {
+    display: none;
+    align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    background: var(--red-050); border: 1px solid #f2c9c9;
+    border-radius: 8px; padding: 12px 14px; margin: 16px 0 4px;
+    font-size: 12.5px; color: var(--red-800); font-weight: 600;
+  }
+
+  /* ===== FICHA VISUAL (imita um formulário impresso) ===== */
+  .sheet-wrap { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 22px; }
+  .sheet {
+    border: 1.5px solid #14161a;
+    border-radius: 4px;
+    background: #ffffff;
+    font-family: Arial, sans-serif;
+    color: #14161a;
+    box-shadow: var(--shadow-sheet);
+    overflow: hidden;
+  }
+  .sheet-header { text-align: center; padding: 14px 0 6px; font-weight: bold; font-size: 16px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .sheet-subheader { text-align: center; font-size: 11px; margin-bottom: 12px; font-weight: bold; color: #3a3d44; }
+  .sheet-table { width: 100%; border-collapse: collapse; margin-bottom: -1px; }
+  .sheet-table td, .sheet-table th { border: 1px solid #14161a; padding: 8px 10px; font-size: 12px; vertical-align: top; }
+  .sheet-table th { background-color: #f4f5f7; text-align: left; font-weight: bold; text-transform: uppercase; }
+  .bg-gray { background-color: #fafafb; }
+  .score-badge { font-weight: bold; font-size: 14px; }
+  .footer-warning { border-top: 1px solid #14161a; padding: 13px; text-align: center; font-weight: bold; font-size: 11px; text-transform: uppercase; }
+  .caption-below { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 10px; }
+
+  /* ===== PRÉ-VISUALIZAÇÃO DO E-MAIL ===== */
+  .email-meta { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; background: #fafbfd; }
+  .email-meta div { font-size: 13px; color: var(--text-primary); padding: 3px 0; }
+  .email-meta-label { display: inline-block; width: 62px; color: var(--text-muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .email-body {
+    font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.7;
+    white-space: pre-wrap; min-height: 280px; resize: vertical;
+    background: #fafbfd;
+  }
+
+  /* ===== HISTÓRICO ===== */
+  .history-list { max-height: 260px; overflow-y: auto; margin-top: 4px; }
+  .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 4px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .history-item:last-child { border-bottom: none; }
+  .history-empty { padding: 14px 4px; color: var(--text-muted); text-align: center; font-size: 13px; }
+
+  .toast {
+    position: fixed; bottom: 22px; right: 22px;
+    background: var(--navy-900); color: #fff;
+    padding: 12px 20px; border-radius: 8px; font-size: 13.5px;
+    display: none; box-shadow: 0 6px 20px rgba(0,0,0,0.25); z-index: 999;
+  }
+</style>
 </head>
 <body>
 
 <div class="app-container">
-  <h2 class="header-title">📋 GERADOR DE FEEDBACK DE MONITORIA</h2>
+
+  <header class="app-header">
+    <div class="app-header-icon">📋</div>
+    <div>
+      <h1 class="app-title">Painel de Monitoria &amp; Reorientação</h1>
+      <p class="app-subtitle">Extraia os dados do relatório, gere a ficha de feedback para o operador e, quando o erro exigir, monte o e-mail de reorientação para o supervisor.</p>
+    </div>
+  </header>
+
+  <div class="tab-switch" role="tablist">
+    <button type="button" id="tabFichaBtn" class="tab-btn active" onclick="mudarAba('ficha')">Ficha Visual de Monitoria</button>
+    <button type="button" id="tabEmailBtn" class="tab-btn" onclick="mudarAba('email')">E-mail de Reorientação</button>
+  </div>
 
   <div class="grid-layout">
-    <!-- COLUNA ESQUERDA: FORMULÁRIO -->
+
+    <!-- ===================== COLUNA ESQUERDA ===================== -->
     <div>
+
       <div class="card">
-        <div class="card-title">1. Cole o Relatório Bruto</div>
+        <div class="card-title"><span class="step-badge">1</span> Relatório bruto</div>
         <textarea id="rawInput" rows="7" placeholder="Cole aqui o texto da monitoria contendo Data Realizada, Operador, AQM, Monitoria, Atendimento, MO, etc..."></textarea>
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-          <button class="btn btn-block" onclick="processarTexto()">⚡ Processar e Gerar Feedback</button>
-          <button class="btn btn-outline btn-block" onclick="novaMonitoria()">🗑️ Nova Monitoria</button>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="processarTexto()">Processar relatório</button>
+          <button class="btn btn-outline" onclick="novaMonitoria()">Nova monitoria</button>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">2. Ajuste Fino dos Dados</div>
+        <div class="card-title"><span class="step-badge">2</span> Dados do registro</div>
+
         <div class="form-row">
-          <div class="form-group"><label>Data Realizada</label><input type="text" id="fieldDataRealizada" oninput="atualizarFicha()"></div>
+          <div class="form-group"><label>Data realizada</label><input type="text" id="fieldDataRealizada" oninput="atualizarFicha()"></div>
           <div class="form-group"><label>Operador(a)</label><input type="text" id="fieldOperador" oninput="atualizarFicha()"></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Data/Hora Atendimento</label><input type="text" id="fieldDataHora" oninput="atualizarFicha()"></div>
+          <div class="form-group"><label>Data/hora do atendimento</label><input type="text" id="fieldDataHora" oninput="atualizarFicha()"></div>
           <div class="form-group"><label>Protocolo</label><input type="text" id="fieldProtocolo" oninput="atualizarFicha()"></div>
         </div>
-        <div class="form-row">
-          <div class="form-group"><label>Nota Monitoria</label><input type="text" id="fieldNotaMonitoria" oninput="atualizarFicha()"></div>
-          <div class="form-group"><label>Nota AQM</label><input type="text" id="fieldNotaAqm" oninput="atualizarFicha()"></div>
+
+        <div class="only-ficha">
+          <hr class="field-divider">
+          <div class="form-row">
+            <div class="form-group"><label>Nota monitoria</label><input type="text" id="fieldNotaMonitoria" oninput="atualizarFicha()"></div>
+            <div class="form-group"><label>Nota AQM</label><input type="text" id="fieldNotaAqm" oninput="atualizarFicha()"></div>
+          </div>
+          <div id="avisoNotaZero" class="alert-banner">
+            <span>⚠️ Nota zerada — este atendimento pode exigir reorientação.</span>
+            <button type="button" class="btn btn-outline-red btn-sm" onclick="mudarAba('email')">Abrir reorientação</button>
+          </div>
+          <div class="form-group"><label>M.O.</label><input type="text" id="fieldMo" oninput="atualizarFicha()"></div>
+          <div class="form-group"><label>Atendimento / resumo</label><textarea id="fieldAtendimento" rows="3" oninput="atualizarFicha()"></textarea></div>
+          <div class="form-group"><label>Observações / pontos de atenção</label><textarea id="fieldObservacao" rows="3" oninput="atualizarFicha()"></textarea></div>
         </div>
-        <div class="form-group"><label>M.O.</label><input type="text" id="fieldMo" oninput="atualizarFicha()"></div>
-        <div class="form-group"><label>Atendimento / Resumo</label><textarea id="fieldAtendimento" rows="3" oninput="atualizarFicha()"></textarea></div>
-        <div class="form-group"><label>Observações / Pontos de Atenção</label><textarea id="fieldObservacao" rows="3" oninput="atualizarFicha()"></textarea></div>
       </div>
 
-      <div class="card card-alert">
-        <div class="card-title">3. Solicitação de Reorientação</div>
-        <div id="avisoNotaZero" class="warning-banner">⚠️ Nota da monitoria zerada — considere abrir uma Reorientação para o supervisor.</div>
+      <div class="card card-accent-red only-email">
+        <div class="card-title"><span class="step-badge">3</span> Solicitação de reorientação</div>
+        <p class="card-caption">Operador(a), protocolo e data/hora do atendimento já vêm do passo 2.</p>
+
         <div class="form-row">
           <div class="form-group">
-            <label>Supervisor(a) Imediato(a)</label>
+            <label>Supervisor(a) imediato(a)</label>
             <select id="fieldSupervisor" onchange="alternarSupervisorOutro(); atualizarPreviewReorientacao();">
               <option value="">Selecione...</option>
               <option value="Kelvin">Kelvin</option>
@@ -108,99 +297,85 @@
               <option value="Outro">Outro...</option>
             </select>
           </div>
-          <div class="form-group"><label>E-mail do(a) Supervisor(a) (opcional)</label><input type="email" id="fieldSupervisorEmail" oninput="atualizarPreviewReorientacao()" placeholder="supervisor@empresa.com"></div>
+          <div class="form-group"><label>E-mail do(a) supervisor(a) (opcional)</label><input type="email" id="fieldSupervisorEmail" oninput="atualizarPreviewReorientacao()" placeholder="supervisor@empresa.com"></div>
         </div>
         <div class="form-group" id="grupoSupervisorOutro" style="display: none;">
-          <label>Nome do(a) Supervisor(a)</label>
+          <label>Nome do(a) supervisor(a)</label>
           <input type="text" id="fieldSupervisorOutro" oninput="atualizarPreviewReorientacao()" placeholder="Digite o nome do(a) supervisor(a)">
         </div>
-        <div class="form-group"><label>Atendimento (Data/Hora do atendimento)</label><input type="text" id="fieldReorientAtendimento" oninput="atualizarPreviewReorientacao()" placeholder="Ex: 14/09/2026 12:35:37"></div>
         <div class="form-group"><label>Solicitação</label><input type="text" id="fieldSolicitacao" oninput="atualizarPreviewReorientacao()" placeholder="Ex: análise e providências cabíveis"></div>
         <div class="form-group"><label>Desvios identificados (um por linha)</label><textarea id="fieldDesvios" rows="4" oninput="atualizarPreviewReorientacao()" placeholder="Não realizou a sondagem...&#10;Não direcionou ao setor pertinente..."></textarea></div>
-        <button class="btn btn-alert btn-block" onclick="gerarEmailReorientacao()">📧 Gerar E-mail de Reorientação</button>
+        <button class="btn btn-danger btn-block" onclick="gerarEmailReorientacao()">Gerar e-mail de reorientação</button>
       </div>
+
     </div>
 
-    <!-- COLUNA DIREITA: PREVIEW DA FICHA DA MONITORIA -->
+    <!-- ===================== COLUNA DIREITA ===================== -->
     <div>
-      <div class="preview-container">
-        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-          <button class="btn btn-secondary btn-block" onclick="copiarFichaFormatada()">📋 Copiar Formatado (Teams/Outlook)</button>
-        </div>
 
-        <div id="fichaRender" class="sheet">
-          <div class="sheet-header">FEEDBACK MONITORIA</div>
-          <div class="sheet-subheader">Data de Realização: <span id="outDataRealizada">---</span></div>
+      <div class="only-ficha">
+        <div class="sheet-wrap">
+          <div id="fichaRender" class="sheet">
+            <div class="sheet-header">Feedback Monitoria</div>
+            <div class="sheet-subheader">Data de Realização: <span id="outDataRealizada">---</span></div>
 
-          <table class="sheet-table">
-            <tr>
-              <td colspan="2"><strong>Operador(a):</strong> <span id="outOperador">---</span></td>
-            </tr>
-            <tr class="bg-gray">
-              <td width="50%"><strong>NOTA MONITORIA:</strong> <span id="outNotaMonitoria" class="score-badge">--</span></td>
-              <td width="50%"><strong>NOTA AQM:</strong> <span id="outNotaAqm" class="score-badge">--</span></td>
-            </tr>
-          </table>
+            <table class="sheet-table">
+              <tr><td colspan="2"><strong>Operador(a):</strong> <span id="outOperador">---</span></td></tr>
+              <tr class="bg-gray">
+                <td width="50%"><strong>NOTA MONITORIA:</strong> <span id="outNotaMonitoria" class="score-badge">--</span></td>
+                <td width="50%"><strong>NOTA AQM:</strong> <span id="outNotaAqm" class="score-badge">--</span></td>
+              </tr>
+            </table>
 
-          <table class="sheet-table">
-            <tr>
-              <td width="50%"><strong>PROTOCOLO:</strong> <br><span id="outProtocolo">---</span></td>
-              <td width="50%"><strong>M.O.:</strong> <br><span id="outMo">---</span></td>
-            </tr>
-            <tr>
-              <td colspan="2"><strong>DATA DO ATENDIMENTO:</strong> <span id="outDataHora">---</span></td>
-            </tr>
-          </table>
+            <table class="sheet-table">
+              <tr>
+                <td width="50%"><strong>PROTOCOLO:</strong><br><span id="outProtocolo">---</span></td>
+                <td width="50%"><strong>M.O.:</strong><br><span id="outMo">---</span></td>
+              </tr>
+              <tr><td colspan="2"><strong>DATA DO ATENDIMENTO:</strong> <span id="outDataHora">---</span></td></tr>
+            </table>
 
-          <table class="sheet-table">
-            <tr>
-              <th>DESCRIÇÃO DO ATENDIMENTO</th>
-            </tr>
-            <tr>
-              <td>
-                <div id="outAtendimento">---</div>
-              </td>
-            </tr>
-          </table>
+            <table class="sheet-table">
+              <tr><th>Descrição do atendimento</th></tr>
+              <tr><td><div id="outAtendimento">---</div></td></tr>
+            </table>
 
-          <table class="sheet-table">
-            <tr>
-              <th>OBSERVAÇÕES / PONTOS DE ATENÇÃO</th>
-            </tr>
-            <tr>
-              <td>
-                <div id="outObservacao">---</div>
-              </td>
-            </tr>
-          </table>
+            <table class="sheet-table">
+              <tr><th>Observações / pontos de atenção</th></tr>
+              <tr><td><div id="outObservacao">---</div></td></tr>
+            </table>
 
-          <div class="footer-warning">
-            QUALQUER DÚVIDA OU CONTESTAÇÃO, ACIONAR SUA SUPERVISÃO! OBRIGADO
+            <div class="footer-warning">Qualquer dúvida ou contestação, acionar sua supervisão! Obrigado</div>
           </div>
+          <button class="btn btn-secondary btn-block" style="margin-top: 16px;" onclick="copiarFichaFormatada()">Copiar formatado</button>
+          <p class="caption-below">Pronto para colar no Teams ou Outlook, mantendo bordas e negrito.</p>
         </div>
       </div>
 
-      <!-- PREVIEW DO E-MAIL DE REORIENTAÇÃO -->
-      <div class="card" style="margin-top: 20px;">
-        <div class="card-title">✉️ Pré-visualização do E-mail de Reorientação</div>
-        <textarea id="reorientEmailPreview" class="email-preview" rows="14" placeholder="Preencha os dados da Reorientação e clique em &quot;Gerar E-mail&quot; — o texto aparecerá aqui, editável antes de copiar ou enviar."></textarea>
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-          <button class="btn btn-secondary btn-block" onclick="copiarEmailReorientacao()">📋 Copiar Texto</button>
-          <button class="btn btn-outline btn-block" onclick="abrirNoOutlook()">📧 Abrir no Outlook</button>
+      <div class="card only-email" id="painelEmail">
+        <div class="card-title">Pré-visualização do e-mail</div>
+        <div class="email-meta">
+          <div><span class="email-meta-label">Para</span> <span id="emailPreviewPara">não informado</span></div>
+          <div><span class="email-meta-label">Assunto</span> <span id="emailPreviewAssunto">—</span></div>
+        </div>
+        <textarea id="reorientEmailPreview" class="email-body" rows="14" placeholder="Preencha os dados da reorientação e clique em “Gerar e-mail de reorientação” — o texto aparecerá aqui, editável antes de copiar ou enviar."></textarea>
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="copiarEmailReorientacao()">Copiar texto</button>
+          <button class="btn btn-outline" onclick="abrirNoOutlook()">Abrir no Outlook</button>
         </div>
       </div>
 
-      <!-- HISTÓRICO DE MONITORIAS -->
-      <div class="card" style="margin-top: 20px;">
-        <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
-          <span>📜 Histórico Salvo Automático</span>
-          <div style="display: flex; gap: 5px;">
-            <button class="btn btn-outline" style="padding: 4px 8px; font-size: 11px;" onclick="exportarHistorico()">📥 Baixar (.txt)</button>
-            <button class="btn btn-danger" onclick="limparHistorico()">Limpar Tudo</button>
+      <div class="card">
+        <div class="card-title" style="justify-content: space-between; border-bottom: 1px solid var(--border);">
+          <span>Histórico salvo automático</span>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-outline btn-sm" onclick="exportarHistorico()">Baixar (.txt)</button>
+            <button class="btn btn-outline-red btn-sm" onclick="limparHistorico()">Limpar tudo</button>
           </div>
         </div>
         <div id="historyContainer" class="history-list"></div>
       </div>
+
     </div>
   </div>
 </div>
@@ -210,10 +385,34 @@
 <script>
   const CAMPOS_IDS = ['fieldDataRealizada','fieldOperador','fieldDataHora','fieldProtocolo',
                       'fieldNotaMonitoria','fieldNotaAqm','fieldMo','fieldAtendimento','fieldObservacao',
-                      'fieldSupervisor','fieldSupervisorOutro','fieldSupervisorEmail','fieldReorientAtendimento','fieldSolicitacao','fieldDesvios'];
+                      'fieldSupervisor','fieldSupervisorOutro','fieldSupervisorEmail','fieldSolicitacao','fieldDesvios'];
 
   // Aceita nota inteira ou decimal (com ponto ou vírgula), ex: 8, 8.5, 8,5
   const NUM_PATTERN = '([\\d]+(?:[.,]\\d+)?)';
+
+  // ===================== ABAS =====================
+
+  function mudarAba(aba) {
+    const container = document.querySelector('.app-container');
+    const btnFicha = document.getElementById('tabFichaBtn');
+    const btnEmail = document.getElementById('tabEmailBtn');
+    const paineisFicha = document.querySelectorAll('.only-ficha');
+    const paineisEmail = document.querySelectorAll('.only-email');
+
+    if (aba === 'email') {
+      paineisFicha.forEach(el => el.style.display = 'none');
+      paineisEmail.forEach(el => el.style.display = '');
+      btnFicha.classList.remove('active');
+      btnEmail.classList.add('active');
+    } else {
+      paineisFicha.forEach(el => el.style.display = '');
+      paineisEmail.forEach(el => el.style.display = 'none');
+      btnFicha.classList.add('active');
+      btnEmail.classList.remove('active');
+    }
+  }
+
+  // ===================== CAMPOS / LIMPEZA =====================
 
   function limparCampos() {
     CAMPOS_IDS.forEach(id => { document.getElementById(id).value = ''; });
@@ -221,6 +420,7 @@
     if (preview) preview.value = '';
     alternarSupervisorOutro();
     atualizarFicha();
+    atualizarPreviewReorientacao();
   }
 
   function novaMonitoria() {
@@ -249,10 +449,7 @@
 
     if (dataRealizadaMatch) document.getElementById('fieldDataRealizada').value = dataRealizadaMatch[1].trim();
     if (operadorMatch) document.getElementById('fieldOperador').value = operadorMatch[1].trim();
-    if (dataHoraMatch) {
-      document.getElementById('fieldDataHora').value = dataHoraMatch[1].trim();
-      document.getElementById('fieldReorientAtendimento').value = dataHoraMatch[1].trim();
-    }
+    if (dataHoraMatch) document.getElementById('fieldDataHora').value = dataHoraMatch[1].trim();
     if (protocoloMatch) document.getElementById('fieldProtocolo').value = protocoloMatch[1].trim();
     if (aqmMatch) document.getElementById('fieldNotaAqm').value = aqmMatch[1].trim();
     if (monitoriaMatch) document.getElementById('fieldNotaMonitoria').value = monitoriaMatch[1].trim();
@@ -273,6 +470,7 @@
     if (obsMatch) document.getElementById('fieldObservacao').value = obsMatch[1].trim();
 
     atualizarFicha();
+    atualizarPreviewReorientacao();
   }
 
   function processarTexto() {
@@ -302,9 +500,11 @@
     const notaSpan = document.getElementById('outNotaMonitoria');
     const aviso = document.getElementById('avisoNotaZero');
     const zerou = notaTexto !== '' && !isNaN(notaValor) && notaValor === 0;
-    notaSpan.style.color = zerou ? '#c62828' : '#2e7d32';
-    if (aviso) aviso.style.display = zerou ? 'block' : 'none';
+    notaSpan.style.color = zerou ? '#9c2b2b' : '#2f6f4e';
+    if (aviso) aviso.style.display = zerou ? 'flex' : 'none';
   }
+
+  // ===================== FICHA: CÓPIA FORMATADA =====================
 
   // Gera a ficha como HTML com estilos INLINE em cada célula. Isso é essencial:
   // o <style> da página não é copiado junto no clipboard, então tabelas/negrito/
@@ -314,19 +514,25 @@
     const v = id => (document.getElementById(id).value || '').trim();
     const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
 
-    const td = 'border:1px solid #000000;padding:6px 8px;font-size:12px;vertical-align:top;font-family:Arial,sans-serif;';
-    const th = td + 'background-color:#f2f2f2;text-align:left;font-weight:bold;text-transform:uppercase;';
+    const td = 'border:1px solid #14161a;padding:8px 10px;font-size:12px;vertical-align:top;font-family:Arial,sans-serif;';
+    const th = td + 'background-color:#f4f5f7;text-align:left;font-weight:bold;text-transform:uppercase;';
     const table = 'width:100%;border-collapse:collapse;margin-bottom:-1px;';
-    const badge = 'font-weight:bold;color:#2e7d32;font-size:14px;';
+    const badgeVerde = 'font-weight:bold;color:#2f6f4e;font-size:14px;';
+    const badgeVermelho = 'font-weight:bold;color:#9c2b2b;font-size:14px;';
 
-    return `<div style="border:2px solid #000000;font-family:Arial,sans-serif;color:#000000;width:100%;box-sizing:border-box;">
-  <div style="text-align:center;padding:10px 0 5px 0;font-weight:bold;font-size:16px;text-transform:uppercase;">FEEDBACK MONITORIA</div>
-  <div style="text-align:center;font-size:11px;margin-bottom:10px;font-weight:bold;">Data de Realização: ${esc(v('fieldDataRealizada') || '---')}</div>
+    const notaTexto = v('fieldNotaMonitoria').replace(',', '.');
+    const notaValor = parseFloat(notaTexto);
+    const zerou = notaTexto !== '' && !isNaN(notaValor) && notaValor === 0;
+    const badge = zerou ? badgeVermelho : badgeVerde;
+
+    return `<div style="border:1.5px solid #14161a;border-radius:4px;font-family:Arial,sans-serif;color:#14161a;width:100%;box-sizing:border-box;">
+  <div style="text-align:center;padding:14px 0 6px;font-weight:bold;font-size:16px;text-transform:uppercase;">FEEDBACK MONITORIA</div>
+  <div style="text-align:center;font-size:11px;margin-bottom:12px;font-weight:bold;">Data de Realização: ${esc(v('fieldDataRealizada') || '---')}</div>
   <table style="${table}">
     <tr><td style="${td}" colspan="2"><strong>Operador(a):</strong> ${esc(v('fieldOperador') || '---')}</td></tr>
-    <tr style="background-color:#f8f9fa;">
+    <tr style="background-color:#fafafb;">
       <td style="${td}" width="50%"><strong>NOTA MONITORIA:</strong> <span style="${badge}">${esc(v('fieldNotaMonitoria') || '--')}</span></td>
-      <td style="${td}" width="50%"><strong>NOTA AQM:</strong> <span style="${badge}">${esc(v('fieldNotaAqm') || '--')}</span></td>
+      <td style="${td}" width="50%"><strong>NOTA AQM:</strong> <span style="${badgeVerde}">${esc(v('fieldNotaAqm') || '--')}</span></td>
     </tr>
   </table>
   <table style="${table}">
@@ -344,7 +550,7 @@
     <tr><th style="${th}">OBSERVAÇÕES / PONTOS DE ATENÇÃO</th></tr>
     <tr><td style="${td}">${esc(v('fieldObservacao') || '---')}</td></tr>
   </table>
-  <div style="border-top:1px solid #000000;padding:12px;text-align:center;font-weight:bold;font-size:11px;text-transform:uppercase;margin-top:15px;">
+  <div style="border-top:1px solid #14161a;padding:13px;text-align:center;font-weight:bold;font-size:11px;text-transform:uppercase;">
     QUALQUER DÚVIDA OU CONTESTAÇÃO, ACIONAR SUA SUPERVISÃO! OBRIGADO
   </div>
 </div>`;
@@ -376,6 +582,18 @@
 
   // ===================== REORIENTAÇÃO =====================
 
+  function alternarSupervisorOutro() {
+    const sel = document.getElementById('fieldSupervisor').value;
+    const grupo = document.getElementById('grupoSupervisorOutro');
+    grupo.style.display = sel === 'Outro' ? 'block' : 'none';
+  }
+
+  function getSupervisorNome() {
+    const sel = document.getElementById('fieldSupervisor').value;
+    if (sel === 'Outro') return (document.getElementById('fieldSupervisorOutro').value || '').trim();
+    return sel;
+  }
+
   function saudacaoPorHorario() {
     const h = new Date().getHours();
     if (h < 12) return 'Bom dia';
@@ -400,16 +618,10 @@
       .join('\n');
   }
 
-  function alternarSupervisorOutro() {
-    const sel = document.getElementById('fieldSupervisor').value;
-    const grupo = document.getElementById('grupoSupervisorOutro');
-    grupo.style.display = sel === 'Outro' ? 'block' : 'none';
-  }
-
-  function getSupervisorNome() {
-    const sel = document.getElementById('fieldSupervisor').value;
-    if (sel === 'Outro') return (document.getElementById('fieldSupervisorOutro').value || '').trim();
-    return sel;
+  function montarAssunto() {
+    const operador = document.getElementById('fieldOperador').value.trim();
+    const protocolo = document.getElementById('fieldProtocolo').value.trim();
+    return `REORIENTAÇÃO - ${operador || 'Operador'}${protocolo ? ' - Protocolo ' + protocolo : ''}`;
   }
 
   function montarTextoReorientacao() {
@@ -417,7 +629,7 @@
     const operador = v('fieldOperador') || '[nome do operador]';
     const supervisor = getSupervisorNome() || '[nome do supervisor]';
     const protocolo = v('fieldProtocolo') || '---';
-    const atendimento = v('fieldReorientAtendimento') || v('fieldDataHora') || '---';
+    const atendimento = v('fieldDataHora') || '---';
     const solicitacao = v('fieldSolicitacao') || '---';
     const desviosRaw = v('fieldDesvios');
     const desvios = desviosRaw ? formatarDesvios(desviosRaw) : '- ---';
@@ -439,41 +651,20 @@ Qualquer dúvida estou a disposição!`;
 
   // Atualiza só a pré-visualização (não grava no histórico) — chamada a cada
   // edição nos campos da Reorientação, para não sobrescrever ajustes manuais
-  // no texto final feitos após o clique em "Gerar E-mail".
+  // no texto final feitos após o clique em "Gerar e-mail de reorientação".
   function atualizarPreviewReorientacao() {
     document.getElementById('reorientEmailPreview').value = montarTextoReorientacao();
+    document.getElementById('emailPreviewPara').innerText = document.getElementById('fieldSupervisorEmail').value.trim() || 'não informado';
+    document.getElementById('emailPreviewAssunto').innerText = montarAssunto();
   }
 
   function gerarEmailReorientacao() {
     const texto = montarTextoReorientacao();
     document.getElementById('reorientEmailPreview').value = texto;
+    document.getElementById('emailPreviewPara').innerText = document.getElementById('fieldSupervisorEmail').value.trim() || 'não informado';
+    document.getElementById('emailPreviewAssunto').innerText = montarAssunto();
     salvarReorientacaoNoHistorico(texto);
     showToast('E-mail de reorientação gerado e registrado no histórico.');
-  }
-
-  function salvarReorientacaoNoHistorico(texto) {
-    const v = id => (document.getElementById(id).value || '').trim();
-    const history = lerHistorico();
-    history.unshift({
-      id: Date.now(),
-      tipo: 'reorientacao',
-      operador: v('fieldOperador') || 'Operador não identificado',
-      data: v('fieldReorientAtendimento') || v('fieldDataHora') || new Date().toLocaleDateString(),
-      text: texto,
-      dados: {
-        supervisorSelect: document.getElementById('fieldSupervisor').value,
-        supervisorOutro: v('fieldSupervisorOutro'),
-        supervisorEmail: v('fieldSupervisorEmail'),
-        atendimento: v('fieldReorientAtendimento'),
-        protocolo: v('fieldProtocolo'),
-        operador: v('fieldOperador'),
-        solicitacao: v('fieldSolicitacao'),
-        desvios: v('fieldDesvios')
-      }
-    });
-    if (history.length > 50) history.pop();
-    gravarHistorico(history);
-    carregarHistorico();
   }
 
   async function copiarEmailReorientacao() {
@@ -498,15 +689,15 @@ Qualquer dúvida estou a disposição!`;
       return;
     }
     const destinatario = document.getElementById('fieldSupervisorEmail').value.trim();
-    const operador = document.getElementById('fieldOperador').value.trim();
-    const protocolo = document.getElementById('fieldProtocolo').value.trim();
-    const assunto = `REORIENTAÇÃO - ${operador || 'Operador'}${protocolo ? ' - Protocolo ' + protocolo : ''}`;
+    const assunto = montarAssunto();
     if (texto.length > 1800) {
       showToast('Aviso: e-mail longo, alguns clientes de e-mail podem cortar o corpo do mailto.');
     }
     const link = `mailto:${destinatario}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(texto)}`;
     window.location.href = link;
   }
+
+  // ===================== HISTÓRICO =====================
 
   // Leitura/escrita protegidas: um histórico corrompido ou armazenamento
   // indisponível (modo privado, quota cheia) não pode travar a página inteira.
@@ -531,10 +722,35 @@ Qualquer dúvida estou a disposição!`;
   function salvarNoHistorico(rawText) {
     const op = document.getElementById('fieldOperador').value || 'Operador não identificado';
     const dt = document.getElementById('fieldDataRealizada').value || new Date().toLocaleDateString();
-    
+
     let history = lerHistorico();
     history.unshift({ id: Date.now(), tipo: 'monitoria', operador: op, data: dt, text: rawText });
-    
+
+    if (history.length > 50) history.pop();
+    gravarHistorico(history);
+    carregarHistorico();
+  }
+
+  function salvarReorientacaoNoHistorico(texto) {
+    const v = id => (document.getElementById(id).value || '').trim();
+    const history = lerHistorico();
+    history.unshift({
+      id: Date.now(),
+      tipo: 'reorientacao',
+      operador: v('fieldOperador') || 'Operador não identificado',
+      data: v('fieldDataHora') || new Date().toLocaleDateString(),
+      text: texto,
+      dados: {
+        supervisorSelect: document.getElementById('fieldSupervisor').value,
+        supervisorOutro: v('fieldSupervisorOutro'),
+        supervisorEmail: v('fieldSupervisorEmail'),
+        atendimento: v('fieldDataHora'),
+        protocolo: v('fieldProtocolo'),
+        operador: v('fieldOperador'),
+        solicitacao: v('fieldSolicitacao'),
+        desvios: v('fieldDesvios')
+      }
+    });
     if (history.length > 50) history.pop();
     gravarHistorico(history);
     carregarHistorico();
@@ -543,20 +759,20 @@ Qualquer dúvida estou a disposição!`;
   function carregarHistorico() {
     const history = lerHistorico();
     const container = document.getElementById('historyContainer');
-    
+
     if (history.length === 0) {
-      container.innerHTML = '<div style="padding:10px; color:#888; text-align:center;">Nenhuma monitoria salva no histórico.</div>';
+      container.innerHTML = '<div class="history-empty">Nenhuma monitoria salva no histórico.</div>';
       return;
     }
 
     container.innerHTML = history.map(item => `
       <div class="history-item">
         <div>
-          <strong>${item.tipo === 'reorientacao' ? '🔺 ' : '📋 '}${escapeHtml(item.operador)}</strong> 
-          <span style="color:#666; font-size:11px;">(${escapeHtml(item.data)})</span>
+          <strong>${item.tipo === 'reorientacao' ? '🔺 ' : '📋 '}${escapeHtml(item.operador)}</strong>
+          <span style="color:#8b93a7; font-size:11px;">(${escapeHtml(item.data)})</span>
         </div>
         <div>
-          <button class="btn btn-outline" style="padding:3px 6px; font-size:11px;" onclick="recarregarHistorico(${item.id})">Reabrir</button>
+          <button class="btn btn-outline btn-sm" onclick="recarregarHistorico(${item.id})">Reabrir</button>
         </div>
       </div>
     `).join('');
@@ -572,19 +788,23 @@ Qualquer dúvida estou a disposição!`;
       limparCampos();
       document.getElementById('fieldOperador').value = d.operador || '';
       document.getElementById('fieldProtocolo').value = d.protocolo || '';
+      document.getElementById('fieldDataHora').value = d.atendimento || '';
       document.getElementById('fieldSupervisor').value = d.supervisorSelect || '';
       document.getElementById('fieldSupervisorOutro').value = d.supervisorOutro || '';
       alternarSupervisorOutro();
       document.getElementById('fieldSupervisorEmail').value = d.supervisorEmail || '';
-      document.getElementById('fieldReorientAtendimento').value = d.atendimento || '';
       document.getElementById('fieldSolicitacao').value = d.solicitacao || '';
       document.getElementById('fieldDesvios').value = d.desvios || '';
       atualizarFicha();
       document.getElementById('reorientEmailPreview').value = item.text;
+      document.getElementById('emailPreviewPara').innerText = (d.supervisorEmail || '').trim() || 'não informado';
+      document.getElementById('emailPreviewAssunto').innerText = montarAssunto();
+      mudarAba('email');
       showToast('Reorientação carregada do histórico.');
     } else {
       document.getElementById('rawInput').value = item.text;
       preencherFormulario(item.text); // só preenche; não grava de novo no histórico
+      mudarAba('ficha');
       showToast('Monitoria carregada do histórico.');
     }
   }
@@ -595,10 +815,10 @@ Qualquer dúvida estou a disposição!`;
       showToast('Nenhum histórico para exportar.');
       return;
     }
-    
+
     let content = "=== HISTÓRICO DE MONITORIAS ===\n\n";
     history.forEach((h, index) => {
-      content += `--- MONITORIA #${index + 1} (${h.operador} - ${h.data}) ---\n`;
+      content += `--- REGISTRO #${index + 1} (${h.tipo === 'reorientacao' ? 'Reorientação' : 'Monitoria'} - ${h.operador} - ${h.data}) ---\n`;
       content += h.text + "\n\n";
     });
 
@@ -610,7 +830,7 @@ Qualquer dúvida estou a disposição!`;
   }
 
   function limparHistorico() {
-    if (confirm('Deseja realmente apagar todo o histórico de monitorias salvas?')) {
+    if (confirm('Deseja realmente apagar todo o histórico salvo?')) {
       localStorage.removeItem('monitorias_history');
       carregarHistorico();
       showToast('Histórico apagado!');
@@ -630,6 +850,8 @@ Qualquer dúvida estou a disposição!`;
 
   window.onload = function() {
     carregarHistorico();
+    atualizarPreviewReorientacao();
+    mudarAba('ficha');
   };
 </script>
 
